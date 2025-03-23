@@ -16,7 +16,7 @@ from typing import Dict, List
 from bs4 import BeautifulSoup
 from flask import Flask, request
 
-__version__ = "0.1.1"
+__version__ = "0.1.2"
 
 
 @dataclass
