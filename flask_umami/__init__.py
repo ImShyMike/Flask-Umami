@@ -16,7 +16,8 @@ from typing import Dict, List
 from bs4 import BeautifulSoup
 from flask import Flask, request
 
-__version__ = "0.1.2"
+__version__ = "0.1.3"
+__all__ = ["Umami", "UmamiConfig"]
 
 
 @dataclass
@@ -31,12 +32,14 @@ class UmamiConfig:
     exclude_search: bool = False
     exclude_hash: bool = False
     do_not_track: bool = False
-    
+
     overwrite_url: str = ""
     overwrite_id: str = ""
 
 
 class Umami:
+    """Flask extension that injects the Umami analytics tag into the HTML response."""
+
     def __init__(
         self,
         app: Flask | None = None,
@@ -95,11 +98,15 @@ class Umami:
         self.enabled = not self.enabled
 
     def _parse_config(self):
-        """Parse the Umami configuration."""
-        config_dict = {
+        """Parse the Umami configuration into a properly formatted dict."""
+        current_config = {
             v: k
             for v, k in self._current_config.__dict__.items()
-            if self._default_config.__dict__.get(v) != k
+            if not k.startswith("overwrite_")
+        }
+
+        config_dict = {
+            v: k for v, k in current_config if self._default_config.__dict__.get(v) != k
         }  # Get only the changed values
 
         if not config_dict:  # If no changes, return empty dict
@@ -169,10 +176,20 @@ class Umami:
                 if self._current_config and self.config is not None:
                     current_config = self._parse_config()
 
+                overwrite_url = (
+                    self._current_config.overwrite_url if self._current_config else None
+                )
+                overwrite_id = (
+                    self._current_config.overwrite_id if self._current_config else None
+                )
+
                 umami_tag = soup.new_tag(
                     "script",
-                    src=f"{self.umami_url}/script.js",
-                    attrs={"defer": "", "data-website-id": self.umami_id}
+                    src=f"{overwrite_url or self.umami_url}/script.js",
+                    attrs={
+                        "defer": "",
+                        "data-website-id": overwrite_id or self.umami_id,
+                    }
                     | current_config,
                 )
 
@@ -196,7 +213,17 @@ class Umami:
                         + " "
                     )
 
-                umami_tag = f'<script defer {config_string}src="{self.umami_url}/script.js" data-website-id="{self.umami_id}"></script>'
+                overwrite_url = (
+                    self._current_config.overwrite_url if self._current_config else None
+                )
+                overwrite_id = (
+                    self._current_config.overwrite_id if self._current_config else None
+                )
+
+                umami_tag = (
+                    f'<script defer {config_string}src="{overwrite_url or self.umami_url}/'
+                    f'script.js" data-website-id="{overwrite_id or self.umami_id}"></script>'
+                )
 
                 # Check if there's a head tag
                 match = self._head_regex.search(html)
