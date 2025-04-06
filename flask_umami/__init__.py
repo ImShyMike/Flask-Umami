@@ -16,7 +16,7 @@ from typing import Dict, List
 from bs4 import BeautifulSoup
 from flask import Flask, request
 
-__version__ = "0.1.3"
+__version__ = "0.1.4"
 __all__ = ["Umami", "UmamiConfig"]
 
 
@@ -102,11 +102,13 @@ class Umami:
         current_config = {
             v: k
             for v, k in self._current_config.__dict__.items()
-            if not k.startswith("overwrite_")
+            if not v.startswith("overwrite_")
         }
 
         config_dict = {
-            v: k for v, k in current_config if self._default_config.__dict__.get(v) != k
+            v: k
+            for v, k in current_config.items()
+            if self._default_config.__dict__.get(v) != k
         }  # Get only the changed values
 
         if not config_dict:  # If no changes, return empty dict

@@ -19,9 +19,10 @@ umami = Umami(
             do_not_track=True,
         ),
         ".*": UmamiConfig( # Falls back to this if no match is found
-            host_url="https://example.com",
             domains=["example.com"],
             tag="umami-script",
+            overwrite_url="https://custom2.example.com",
+            overwrite_id="custom-umami-id",
         )
     },
     ignore_routes=["/admin"],
